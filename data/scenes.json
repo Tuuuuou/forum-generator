@@ -1,0 +1,22 @@
+{
+  "饭圈讨论楼": {
+    "forum_name": "娱乐八卦论坛",
+    "preset_characters": ["毒唯", "路人", "站姐"]
+  },
+  "匿名爆料区": {
+    "forum_name": "匿名吐槽区",
+    "preset_characters": ["吃瓜群众", "当事人", "求私信的", "谜语人"]
+  },
+  "CP发糖楼": {
+    "forum_name": "CP嗑糖专区",
+    "preset_characters": ["CP粉", "CP粉头子", "理中客路人", "歪楼专业户"]
+  },
+  "神颜安利楼": {
+    "forum_name": "颜狗天堂",
+    "preset_characters": ["神颜吹捧粉", "战斗娇妻", "梦女粉", "路人"]
+  },
+  "妈粉护崽楼": {
+    "forum_name": "宝贝成长日记",
+    "preset_characters": ["溺爱妈粉", "暴躁护崽粉", "玻璃心怜爱粉", "毒唯"]
+  }
+}
