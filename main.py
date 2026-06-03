@@ -274,6 +274,51 @@ class ForumGeneratorApp:
         self.opening_text.delete("1.0", tk.END)
         self.opening_text.insert("1.0", "在这里写下楼主帖的内容...")
         
+    def new_scene(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("新建场景")
+        dialog.geometry("400x250")
+
+        tk.Label(dialog, text="场景名称:").pack(pady=(10,0))
+        name_entry = tk.Entry(dialog)
+        name_entry.pack()
+
+        tk.Label(dialog, text="论坛名称:").pack(pady=(10,0))
+        forum_entry = tk.Entry(dialog)
+        forum_entry.pack()
+
+        tk.Label(dialog, text="预设角色（用逗号分隔）:").pack(pady=(10,0))
+        chars_entry = tk.Entry(dialog)
+        chars_entry.pack()
+
+        def save():
+            scene_name = name_entry.get().strip()
+            if not scene_name:
+                messagebox.showwarning("提示", "请输入场景名称")
+                return
+           try:
+                scenes = load_scenes()
+            except:
+                scenes = {}
+            chars_str = chars_entry.get().strip()
+            preset_chars = [c.strip() for c in chars_str.split(",") if c.strip()] if chars_str else []
+            scenes[scene_name] = {
+                "forum_name": forum_entry.get().strip() or scene_name,
+                "preset_characters": preset_chars
+            }
+            try:
+                from data_manager import save_scenes
+                save_scenes(scenes)
+            except:
+                pass
+            self.scenes = scenes
+            scene_names = ["自定义"] + list(scenes.keys())
+            self.scene_combo['values'] = scene_names
+            messagebox.showinfo("成功", f"场景 {scene_name} 已创建")
+            dialog.destroy()
+
+        tk.Button(dialog, text="保存", command=save, bg="#27ae60", fg="white").pack(pady=15)
+        
     def new_character(self):
         dialog = tk.Toplevel(self.root)
         dialog.title("新建角色")
