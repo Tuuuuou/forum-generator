@@ -296,7 +296,7 @@ class ForumGeneratorApp:
             if not scene_name:
                 messagebox.showwarning("提示", "请输入场景名称")
                 return
-           try:
+            try:
                 scenes = load_scenes()
             except:
                 scenes = {}
