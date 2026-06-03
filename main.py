@@ -39,6 +39,7 @@ class ForumGeneratorApp:
         self.scene_var = tk.StringVar(value="自定义")
         scene_names = ["自定义"] + list(self.scenes.keys())
         self.scene_combo = ttk.Combobox(left_frame, textvariable=self.scene_var, values=scene_names, state="readonly")
+        tk.Button(left_frame, text="新建场景", command=self.new_scene).pack(fill="x", pady=(0,5))
         self.scene_combo.pack(fill="x", pady=(0, 5))
         self.scene_combo.bind("<<ComboboxSelected>>", self.on_scene_select)
 
@@ -62,7 +63,8 @@ class ForumGeneratorApp:
         self.char_select_combo = ttk.Combobox(char_select_frame, textvariable=self.char_select_var,
                                               values=list(self.characters.keys()), state="readonly")
         self.char_select_combo.pack(side="left", fill="x", expand=True)
-        tk.Button(char_select_frame, text="添加", command=self.add_character).pack(side="left", padx=5)
+        tk.Button(char_select_frame, text="添加", command=self.add_character).pack(side="left", padx=2)
+        tk.Button(char_select_frame, text="新建角色", command=self.new_character).pack(side="left", padx=2)
         tk.Button(left_frame, text="删除选中角色", command=self.remove_character).pack(fill="x", pady=(0, 10))
 
         tk.Label(left_frame, text="3. 楼主帖（开篇）", font=("", 12, "bold")).pack(anchor="w", pady=(0, 5))
@@ -86,12 +88,12 @@ class ForumGeneratorApp:
 
         tk.Label(right_frame, text="帖子预览", font=("", 12, "bold"), bg="#f0f0f0").pack(anchor="w", pady=(0, 5))
 
-        self.canvas = tk.Canvas(right_frame, bg="white", width=620)
+        self.canvas = tk.Canvas(right_frame, bg="white", width=500)
         scrollbar = tk.Scrollbar(right_frame, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = tk.Frame(self.canvas, bg="white")
 
         self.scrollable_frame.bind("<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=600)
+        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=600,tags="preview_window")
         self.canvas.configure(yscrollcommand=scrollbar.set)
 
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -129,11 +131,19 @@ class ForumGeneratorApp:
         content = self.opening_text.get("1.0", tk.END).strip()
         if not content:
             return
+        import random
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        random_minutes = random.randint(1, 60*24*3)
+        post_time = now - timedelta(minutes=random_minutes)
+        time_str = post_time.strftime("%H:%M") if random_minutes < 60*24 else post_time.strftime("%m-%d %H:%M")
+        
         self.floor_list = [{
             "speaker": "楼主",
             "content": content,
             "avatar": "default.png",
-            "likes": random.randint(10, 999)
+            "likes": random.randint(10, 999),
+            "time": time_str
         }]
         self.refresh_preview()
 
@@ -149,13 +159,27 @@ class ForumGeneratorApp:
         prev_content = prev.get("content", "")
         prev_speaker = prev.get("speaker", "楼主")
 
+        import random
+        from datetime import datetime, timedelta
+        last_time_str = prev.get("time", "00:00")
+        now = datetime.now()
+        random_minutes = random.randint(1, 120)
+        post_time = now - timedelta(minutes=random_minutes)
+        if random_minutes < 60:
+            time_str = post_time.strftime("%H:%M")
+        elif random_minutes < 60*24:
+            time_str = "昨天 " + post_time.strftime("%H:%M")
+        else:
+            time_str = post_time.strftime("%m-%d %H:%M")
+
         try:
             result = generate_reply(prev_content, prev_speaker, self.active_characters, self.floor_list)
             new_floor = {
                 "speaker": result["speaker"],
                 "content": result["content"],
                 "avatar": self.characters.get(result["speaker"], {}).get("avatar", "default.png"),
-                "likes": random.randint(0, 999)
+                "likes": random.randint(0, 999),
+                "time": time_str
             }
             self.floor_list.append(new_floor)
             self.refresh_preview()
@@ -175,6 +199,9 @@ class ForumGeneratorApp:
         speaker_var = tk.StringVar(value=self.active_characters[0])
         ttk.Combobox(dialog, textvariable=speaker_var, values=self.active_characters, state="readonly").pack()
 
+        tk.Label(dialog, text="时间（留空随机生成）:").pack(pady=(10,0))
+        time_entry = tk.Entry(dialog)
+        time_entry.pack()
         tk.Label(dialog, text="内容:").pack(pady=(10, 0))
         content_text = tk.Text(dialog, height=8)
         content_text.pack(fill="both", expand=True, padx=10, pady=5)
@@ -182,16 +209,28 @@ class ForumGeneratorApp:
         def submit():
             content = content_text.get("1.0", tk.END).strip()
             if content:
+                time_str = time_entry.get().strip()
+                if not time_str:
+                    import random
+                    from datetime import datetime, timedelta
+                    now = datetime.now()
+                    random_minutes = random.randint(1, 180)
+                    post_time = now - timedelta(minutes=random_minutes)
+                    if random_minutes < 60:
+                        time_str = post_time.strftime("%H:%M")
+                    elif random_minutes < 60*24:
+                        time_str = "昨天 " + post_time.strftime("%H:%M")
+                    else:
+                        time_str = post_time.strftime("%m-%d %H:%M")
                 self.floor_list.append({
                     "speaker": speaker_var.get(),
                     "content": content,
                     "avatar": self.characters.get(speaker_var.get(), {}).get("avatar", "default.png"),
-                    "likes": random.randint(0, 999)
+                    "likes": random.randint(0, 999),
+                    "time": time_str
                 })
                 self.refresh_preview()
                 dialog.destroy()
-
-        tk.Button(dialog, text="添加", command=submit, bg="#27ae60", fg="white").pack(pady=10)
 
     def refresh_preview(self):
         for widget in self.scrollable_frame.winfo_children():
@@ -214,6 +253,7 @@ class ForumGeneratorApp:
             ttk.Separator(self.scrollable_frame, orient="horizontal").pack(fill="x", padx=10)
             self.scrollable_frame.update_idletasks()
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            self.canvas.yview_moveto(0)
 
     def export(self):
         if not self.floor_list:
@@ -232,6 +272,107 @@ class ForumGeneratorApp:
         self.refresh_char_listbox()
         self.opening_text.delete("1.0", tk.END)
         self.opening_text.insert("1.0", "在这里写下楼主帖的内容...")
+        
+    def new_character(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("新建角色")
+        dialog.geometry("350x280")
+
+        tk.Label(dialog, text="角色ID（唯一标识）:").pack(pady=(10,0))
+        id_entry = tk.Entry(dialog)
+        id_entry.pack()
+
+        tk.Label(dialog, text="显示昵称:").pack(pady=(10,0))
+        name_entry = tk.Entry(dialog)
+        name_entry.pack()
+
+        tk.Label(dialog, text="人设描述（选填）:").pack(pady=(10,0))
+        persona_entry = tk.Entry(dialog)
+        persona_entry.pack()
+
+        tk.Label(dialog, text="口头禅（选填）:").pack(pady=(10,0))
+        catch_entry = tk.Entry(dialog)
+        catch_entry.pack()
+
+        tk.Label(dialog, text="默认情绪:").pack(pady=(10,0))
+        emotion_combo = ttk.Combobox(dialog, values=["吃瓜","愤怒","温柔","吐槽","震惊","冷静","CP","梦女","心虚"], state="readonly")
+        emotion_combo.current(0)
+        emotion_combo.pack()
+
+        def save():
+            char_id = id_entry.get().strip()
+            if not char_id:
+                messagebox.showwarning("提示", "请输入角色ID")
+                return
+            try:
+                chars = load_characters()
+            except:
+                chars = {}
+            if char_id in chars:
+                messagebox.showwarning("提示", "角色ID已存在")
+                return
+            chars[char_id] = {
+                "name": name_entry.get().strip() or char_id,
+                "avatar": "default.png",
+                "persona": persona_entry.get().strip(),
+                "catchphrase": catch_entry.get().strip(),
+                "default_emotion": emotion_combo.get(),
+                "style": {"sentence_length":"中","aggressiveness":"中","humor":"中"}
+            }
+            try:
+                save_characters(chars)
+            except:
+                pass
+            self.characters = chars
+            self.char_select_combo['values'] = list(chars.keys())
+            messagebox.showinfo("成功", f"角色 {char_id} 创建成功")
+            dialog.destroy()
+
+        tk.Button(dialog, text="保存", command=save, bg="#27ae60", fg="white").pack(pady=15)
+    def new_scene(self):
+        dialog = tk.Toplevel(self.root)
+        dialog.title("新建场景")
+        dialog.geometry("400x250")
+
+        tk.Label(dialog, text="场景名称:").pack(pady=(10,0))
+        name_entry = tk.Entry(dialog)
+        name_entry.pack()
+
+        tk.Label(dialog, text="论坛名称:").pack(pady=(10,0))
+        forum_entry = tk.Entry(dialog)
+        forum_entry.pack()
+
+        tk.Label(dialog, text="预设角色（用逗号分隔）:").pack(pady=(10,0))
+        chars_entry = tk.Entry(dialog)
+        chars_entry.pack()
+
+        def save():
+            scene_name = name_entry.get().strip()
+            if not scene_name:
+                messagebox.showwarning("提示", "请输入场景名称")
+                return
+            try:
+                scenes = load_scenes()
+            except:
+                scenes = {}
+            chars_str = chars_entry.get().strip()
+            preset_chars = [c.strip() for c in chars_str.split(",") if c.strip()] if chars_str else []
+            scenes[scene_name] = {
+                "forum_name": forum_entry.get().strip() or scene_name,
+                "preset_characters": preset_chars
+            }
+            try:
+                from data_manager import save_scenes
+                save_scenes(scenes)
+            except:
+                pass
+            self.scenes = scenes
+            scene_names = ["自定义"] + list(scenes.keys())
+            self.scene_combo['values'] = scene_names
+            messagebox.showinfo("成功", f"场景 {scene_name} 已创建")
+            dialog.destroy()
+
+        tk.Button(dialog, text="保存", command=save, bg="#27ae60", fg="white").pack(pady=15)
 
 if __name__ == "__main__":
     root = tk.Tk()
