@@ -212,6 +212,8 @@ class ForumGeneratorApp:
             tk.Label(f, text=f"第{i+1}楼 · 赞 {floor.get('likes', 0)}", font=("", 9), bg="white", fg="#999").pack(anchor="w")
             tk.Label(f, text=floor["content"], font=("", 11), bg="white", wraplength=580, justify="left").pack(anchor="w", pady=(5, 0))
             ttk.Separator(self.scrollable_frame, orient="horizontal").pack(fill="x", padx=10)
+            self.scrollable_frame.update_idletasks()
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def export(self):
         if not self.floor_list:
