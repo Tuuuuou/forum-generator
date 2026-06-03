@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
 import os
 from config import AVATARS_DIR, EXPORTS_DIR
 
@@ -27,9 +28,9 @@ def render_floor(floor_data, width=600):
     line_height = 28
     content_lines = []
     for line in content.split("\n"):
-        if len(line) > 40:
-            for i in range(0, len(line), 40):
-                content_lines.append(line[i:i+40])
+        if len(line) > 38:
+            wrapped = textwrap.wrap(line,width=38)
+            content_lines.extend(wrapped)
         else:
             content_lines.append(line)
 
